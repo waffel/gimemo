@@ -21,8 +21,6 @@ import org.waffel.gimemo.neuro.train.TrainResult;
 @RestController
 public class TrainRestController {
 
-  // to test file upload: https://github.com/murygin/rest-document-archive/blob/master/src/test/java/org/murygin/archive/client/test/ArchiveClientTest.java
-
   @RequestMapping(value="/train", method = RequestMethod.POST)
   public @ResponseBody
   TrainResult train(@RequestParam("trainfile")MultipartFile trainFile) {
