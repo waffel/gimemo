@@ -9,19 +9,19 @@
 	<packaging>jar</packaging>
 
 	<name>gimemo-webapp</name>
-	<description>Neuronal Network with UI </description>
+	<description>Neuronal Network with genetic algorithm</description>
 
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>1.5.1.RELEASE</version>
+		<version>1.5.9.RELEASE</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<java.version>1.8</java.version>
-		<neuroph.version>2.9</neuroph.version>
+		<neuroph.version>2.94</neuroph.version>
 	</properties>
 
 	<dependencies>
@@ -66,6 +66,16 @@
 			<groupId>org.neuroph</groupId>
 			<artifactId>neuroph-contrib</artifactId>
 			<version>${neuroph.version}</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>neuroph-imgrec</artifactId>
+					<groupId>org.neuroph</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>neuroph-ocr</artifactId>
+					<groupId>org.neuroph</groupId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		
 		<dependency>

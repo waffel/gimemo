@@ -4,7 +4,6 @@
  * This file is part of SPICE.
  */
 package org.waffel.gimemo;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
@@ -48,7 +47,7 @@ public class TrainRestController {
     trainingSet.addRow(new DataSetRow(new double[]{0, 1, 2, 3}, new double[]{0}));
 
     // learn with training set
-    neuralNet.learnInNewThread(trainingSet);
+    neuralNet.learn(trainingSet);
 
     // we need to save the network
     final Path savePath = calculateSavePath(libraryPath);
@@ -60,14 +59,14 @@ public class TrainRestController {
   }
   @RequestMapping(value = "/calculate", method = RequestMethod.POST) public @ResponseBody CalculateResult calculate(
       @RequestParam("prediction") List<Double> predictionList) {
-    predictionList.stream().forEach(it -> LOGGER.debug(it.toString()));
+    predictionList.forEach(it -> LOGGER.debug(it.toString()));
 
     return new CalculateResult();
   }
   private Path calculateSavePath(final String libraryPath) {
     String saveFileName = Long.toString(Instant.now().getEpochSecond());
     Path savePath;
-    if (null != libraryPath && Files.exists(Paths.get(libraryPath))) {
+    if (null != libraryPath && Paths.get(libraryPath).toFile().exists()) {
       savePath = Paths.get(libraryPath, saveFileName);
     } else {
       // save to system temp
