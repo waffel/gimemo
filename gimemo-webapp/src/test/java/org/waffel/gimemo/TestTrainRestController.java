@@ -11,7 +11,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -24,6 +23,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -36,14 +37,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @RunWith(SpringRunner.class) @WebMvcTest(TrainRestController.class) public class TestTrainRestController {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TestTrainRestController.class);
+  @Autowired ResourceLoader resourceLoader;
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
   @Autowired ObjectMapper objectMapper;
   @Autowired private MockMvc mvc;
   @Test public void testTrainCall() throws Exception {
-    final File testFile = temporaryFolder.newFile();
-    Files.write(testFile.toPath(), "12345".getBytes());
-    final MockMultipartFile mockMultipartFile = new MockMultipartFile("trainfile", new FileInputStream(testFile));
+    final Resource resource = resourceLoader.getResource("classpath:org/waffel/gimemo/AMD.csv");
+    final MockMultipartFile mockMultipartFile = new MockMultipartFile("trainfile", resource.getInputStream());
 
     // @formatter:off
     mvc.perform(fileUpload("/train")

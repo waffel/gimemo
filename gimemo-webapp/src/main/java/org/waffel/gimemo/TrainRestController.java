@@ -4,10 +4,16 @@
  * This file is part of SPICE.
  */
 package org.waffel.gimemo;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.neuroph.core.NeuralNetwork;
 import org.neuroph.core.data.DataSet;
@@ -32,19 +38,24 @@ public class TrainRestController {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TrainRestController.class);
 
+  private final Function<String, Double> mapToDataset = line -> {
+    String[] cells = line.split(",");
+    if ((cells.length == 7) && (cells[5] != null) && (cells[5].trim().length() > 0)) {
+      return new Double(cells[5]);
+    }
+    return 0D;
+  };
   @RequestMapping(value="/train", method = RequestMethod.POST)
   public @ResponseBody TrainResult train(@RequestParam("trainfile") MultipartFile trainFile,
-      @RequestParam(value = "libraryPath", required = false) String libraryPath) {
+      @RequestParam(value = "libraryPath", required = false) String libraryPath) throws IOException {
 
     int maxIterations = 10000;
-    NeuralNetwork neuralNet = new MultiLayerPerceptron(4, 9, 1);
+    NeuralNetwork neuralNet = new MultiLayerPerceptron(6, 9, 1);
     ((LMS) neuralNet.getLearningRule()).setMaxError(0.001);//0-1
     ((LMS) neuralNet.getLearningRule()).setLearningRate(0.7);//0-1
     ((LMS) neuralNet.getLearningRule()).setMaxIterations(maxIterations);//0-1
 
-    // create the learning data set
-    final DataSet trainingSet = new DataSet(4, 1);
-    trainingSet.addRow(new DataSetRow(new double[]{0, 1, 2, 3}, new double[]{0}));
+    final DataSet trainingSet = generateTrainSet(trainFile, neuralNet.getInputsCount(), neuralNet.getOutputsCount());
 
     // learn with training set
     neuralNet.learn(trainingSet);
@@ -57,10 +68,33 @@ public class TrainRestController {
     trainResult.setSavePath(savePath);
     return trainResult;
   }
+  private DataSet generateTrainSet(final MultipartFile trainFile, final int inputsCount, final int outputsCount) throws IOException {
+    final DataSet dataSetRows = new DataSet(inputsCount, outputsCount);
+    final InputStream inputStream = trainFile.getInputStream();
+    try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream))) {
+      List<Double> inputList;
+
+      inputList = bufferedReader.lines().skip(1).map(mapToDataset).collect(Collectors.toList());
+      int count = 0;
+      double[] inputSet = {0, 0, 0, 0, 0, 0};
+      for (Double aDouble : inputList) {
+        if (count == 6) {
+          final DataSetRow row = new DataSetRow();
+          row.setInput(inputSet.clone());
+          row.setDesiredOutput(new double[]{aDouble});
+          dataSetRows.add(row);
+          count = 0;
+        }
+        inputSet[count] = aDouble;
+        count++;
+      }
+    }
+    return dataSetRows;
+  }
+
   @RequestMapping(value = "/calculate", method = RequestMethod.POST) public @ResponseBody CalculateResult calculate(
       @RequestParam("prediction") List<Double> predictionList) {
     predictionList.forEach(it -> LOGGER.debug(it.toString()));
-
     return new CalculateResult();
   }
   private Path calculateSavePath(final String libraryPath) {
