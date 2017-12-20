@@ -1,7 +1,5 @@
 /*
- * Copyright (c) 2015 Siemens GS IT EB CONF. All rights reserved.
- * This software is the confidential and proprietary information of Siemens GS IT EB CONF.
- * This file is part of SPICE.
+ * Copyright (c) 2017.
  */
 package org.waffel.gimemo;
 import java.io.BufferedReader;
@@ -17,7 +15,6 @@ import java.util.stream.Collectors;
 
 import org.neuroph.core.NeuralNetwork;
 import org.neuroph.core.data.DataSet;
-import org.neuroph.core.data.DataSetRow;
 import org.neuroph.nnet.MultiLayerPerceptron;
 import org.neuroph.nnet.learning.LMS;
 import org.slf4j.Logger;
@@ -69,27 +66,15 @@ public class TrainRestController {
     return trainResult;
   }
   private DataSet generateTrainSet(final MultipartFile trainFile, final int inputsCount, final int outputsCount) throws IOException {
-    final DataSet dataSetRows = new DataSet(inputsCount, outputsCount);
+    final DataSetCreator dataSetCreator;
     final InputStream inputStream = trainFile.getInputStream();
     try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream))) {
       List<Double> inputList;
 
       inputList = bufferedReader.lines().skip(1).map(mapToDataset).collect(Collectors.toList());
-      int count = 0;
-      double[] inputSet = {0, 0, 0, 0, 0, 0};
-      for (Double aDouble : inputList) {
-        if (count == 6) {
-          final DataSetRow row = new DataSetRow();
-          row.setInput(inputSet.clone());
-          row.setDesiredOutput(new double[]{aDouble});
-          dataSetRows.add(row);
-          count = 0;
-        }
-        inputSet[count] = aDouble;
-        count++;
-      }
+      dataSetCreator = new DataSetCreator(inputList, inputsCount, outputsCount);
     }
-    return dataSetRows;
+    return dataSetCreator.getDataSet();
   }
 
   @RequestMapping(value = "/calculate", method = RequestMethod.POST) public @ResponseBody CalculateResult calculate(
