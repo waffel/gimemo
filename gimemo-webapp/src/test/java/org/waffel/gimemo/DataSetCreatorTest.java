@@ -42,6 +42,7 @@ public class DataSetCreatorTest {
         DoubleStream.of(12.45, 13.76, 2.56, 10.56, 11.67, 8.67, 5.6, 7, 8.94, 11.7).boxed().collect(Collectors.toList());
     final DataSetCreator dataSetCreator = new DataSetCreator(datalist, 5, 1);
     final DataSet dataSet = dataSetCreator.getDataSet();
+    // no second list must be there because there is no element for the output available
     assertThat(dataSet.getRows().size(), equalTo(1));
     assertThat(dataSet.getRowAt(0).getDesiredOutput(), equalTo(new double[]{8.67}));
   }
