@@ -3,6 +3,8 @@
  */
 package org.waffel.gimemo;
 import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -65,10 +67,20 @@ public class TrainRestController {
     trainResult.setSavePath(savePath);
     return trainResult;
   }
+
+  @RequestMapping(value = "/calculate", method = RequestMethod.POST) public @ResponseBody CalculateResult calculate(
+      @RequestParam("prediction") List<Double> predictionList, @RequestParam("savePathOnServer") String savePathOnServer)
+      throws FileNotFoundException {
+    final NeuralNetwork neuralNetwork = NeuralNetwork.load(new FileInputStream(savePathOnServer));
+    neuralNetwork.setInput(predictionList.stream().mapToDouble(d -> d).toArray());
+    neuralNetwork.calculate();
+    LOGGER.debug("output '{}'", neuralNetwork.getOutput());
+    return new CalculateResult();
+  }
   private DataSet generateTrainSet(final MultipartFile trainFile, final int inputsCount, final int outputsCount) throws IOException {
     final DataSetCreator dataSetCreator;
     final InputStream inputStream = trainFile.getInputStream();
-    try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream))) {
+    try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"))) {
       List<Double> inputList;
 
       inputList = bufferedReader.lines().skip(1).map(mapToDataset).collect(Collectors.toList());
@@ -77,11 +89,6 @@ public class TrainRestController {
     return dataSetCreator.getDataSet();
   }
 
-  @RequestMapping(value = "/calculate", method = RequestMethod.POST) public @ResponseBody CalculateResult calculate(
-      @RequestParam("prediction") List<Double> predictionList) {
-    predictionList.forEach(it -> LOGGER.debug(it.toString()));
-    return new CalculateResult();
-  }
   private Path calculateSavePath(final String libraryPath) {
     String saveFileName = Long.toString(Instant.now().getEpochSecond());
     Path savePath;
