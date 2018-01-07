@@ -32,8 +32,8 @@ public class DataSetCreatorTest {
     final DataSetCreator dataSetCreator = new DataSetCreator(datalist, 5, 1);
     final DataSet dataSet = dataSetCreator.getDataSet();
     assertEquals("there should be only two rows, the rest of the list should be skipped", 2, dataSet.getRows().size());
-    assertThat(dataSet.getRowAt(0).getDesiredOutput(), equalTo(new double[]{8.67}));
-    assertThat(dataSet.getRowAt(1).getDesiredOutput(), equalTo(new double[]{13.87}));
+    assertThat(dataSet.getRowAt(0).getDesiredOutput(), equalTo(new double[]{0.6000720980533526}));
+    assertThat(dataSet.getRowAt(1).getDesiredOutput(), equalTo(new double[]{0.9}));
   }
 
   @Test public void inputListSplitShouldWorkWithExactElements() {
@@ -44,7 +44,7 @@ public class DataSetCreatorTest {
     final DataSet dataSet = dataSetCreator.getDataSet();
     // no second list must be there because there is no element for the output available
     assertThat(dataSet.getRows().size(), equalTo(1));
-    assertThat(dataSet.getRowAt(0).getDesiredOutput(), equalTo(new double[]{8.67}));
+    assertThat(dataSet.getRowAt(0).getDesiredOutput(), equalTo(new double[]{0.6040697674418605}));
   }
 
   @Test public void givenList_whenParitioningIntoSublistsUsingPartitionBy_thenCorrect() {

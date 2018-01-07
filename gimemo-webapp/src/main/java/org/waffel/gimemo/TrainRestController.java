@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 import org.neuroph.core.NeuralNetwork;
 import org.neuroph.core.data.DataSet;
 import org.neuroph.nnet.MultiLayerPerceptron;
-import org.neuroph.nnet.learning.LMS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -37,6 +36,9 @@ public class TrainRestController {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TrainRestController.class);
 
+  /**
+   * Returns the correct value from the CVS. The value is in row 5 (starting with 0)
+   */
   private final Function<String, Double> mapToDataset = line -> {
     String[] cells = line.split(",");
     if ((cells.length == 7) && (cells[5] != null) && (cells[5].trim().length() > 0)) {
@@ -44,20 +46,26 @@ public class TrainRestController {
     }
     return 0D;
   };
+
   @RequestMapping(value="/train", method = RequestMethod.POST)
   public @ResponseBody TrainResult train(@RequestParam("trainfile") MultipartFile trainFile,
       @RequestParam(value = "libraryPath", required = false) String libraryPath) throws IOException {
 
     int maxIterations = 10000;
-    NeuralNetwork neuralNet = new MultiLayerPerceptron(6, 9, 1);
-    ((LMS) neuralNet.getLearningRule()).setMaxError(0.001);//0-1
-    ((LMS) neuralNet.getLearningRule()).setLearningRate(0.7);//0-1
-    ((LMS) neuralNet.getLearningRule()).setMaxIterations(maxIterations);//0-1
+    MultiLayerPerceptron neuralNet = new MultiLayerPerceptron(6, 13, 1);
+    neuralNet.getLearningRule().setMaxError(0.001);//0-1
+    neuralNet.getLearningRule().setLearningRate(0.7);//0-1
+    neuralNet.getLearningRule().setMaxIterations(maxIterations);//0-1
+    neuralNet.randomizeWeights();
 
     final DataSet trainingSet = generateTrainSet(trainFile, neuralNet.getInputsCount(), neuralNet.getOutputsCount());
 
     // learn with training set
+    LOGGER.debug("start to train MultilayerPerceptron with {} input, {} hidden and {} output count. Learning rate is '{}' and max error"
+        + " is '{}'", neuralNet.getInputsCount(), neuralNet.getLayersCount(), neuralNet.getOutputsCount(), neuralNet.getLearningRule()
+        .getLearningRate(), neuralNet.getLearningRule().getMaxError());
     neuralNet.learn(trainingSet);
+    LOGGER.debug("learning done after {} iterations", neuralNet.getLearningRule().getMaxIterations());
 
     // we need to save the network
     final Path savePath = calculateSavePath(libraryPath);
@@ -72,7 +80,8 @@ public class TrainRestController {
       @RequestParam("prediction") List<Double> predictionList, @RequestParam("savePathOnServer") String savePathOnServer)
       throws FileNotFoundException {
     final NeuralNetwork neuralNetwork = NeuralNetwork.load(new FileInputStream(savePathOnServer));
-    neuralNetwork.setInput(predictionList.stream().mapToDouble(d -> d).toArray());
+    neuralNetwork.setInput(DataSetCreator.normalizeDouble(predictionList).stream().mapToDouble(d -> d).toArray());
+    LOGGER.debug("calculate the output from {}", DataSetCreator.normalizeDouble(predictionList).toString());
     neuralNetwork.calculate();
     LOGGER.debug("output '{}'", neuralNetwork.getOutput());
     return new CalculateResult();
@@ -82,7 +91,6 @@ public class TrainRestController {
     final InputStream inputStream = trainFile.getInputStream();
     try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"))) {
       List<Double> inputList;
-
       inputList = bufferedReader.lines().skip(1).map(mapToDataset).collect(Collectors.toList());
       dataSetCreator = new DataSetCreator(inputList, inputsCount, outputsCount);
     }
