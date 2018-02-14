@@ -70,6 +70,7 @@ public class TrainRestController {
     // we need to save the network
     final Path savePath = calculateSavePath(libraryPath);
     LOGGER.debug("save neuronal network to {}", savePath);
+    neuralNet.setLabel(java.util.UUID.randomUUID().toString());
     neuralNet.save(savePath.toString());
     final TrainResult trainResult = new TrainResult();
     trainResult.setSavePath(savePath);
@@ -81,10 +82,12 @@ public class TrainRestController {
       throws FileNotFoundException {
     final NeuralNetwork neuralNetwork = NeuralNetwork.load(new FileInputStream(savePathOnServer));
     neuralNetwork.setInput(DataSetCreator.normalizeDouble(predictionList).stream().mapToDouble(d -> d).toArray());
-    LOGGER.debug("calculate the output from {}", DataSetCreator.normalizeDouble(predictionList).toString());
+    LOGGER.debug("calculate the output from {}", DataSetCreator.normalizeDouble(predictionList));
     neuralNetwork.calculate();
     LOGGER.debug("output '{}'", neuralNetwork.getOutput());
-    return new CalculateResult();
+    final CalculateResult result = new CalculateResult();
+    result.setName(neuralNetwork.getLabel());
+    return result;
   }
   private DataSet generateTrainSet(final MultipartFile trainFile, final int inputsCount, final int outputsCount) throws IOException {
     final DataSetCreator dataSetCreator;
